@@ -8,4 +8,4 @@ ALLOWED_ORIGIN = "https://avhrst.github.io"
 [[d1_databases]]
 binding = "DB"
 database_name = "zdibanka-deploy"
-database_id = "REPLACE_AFTER_D1_CREATE"
+database_id = "bf2ebdf9-8bcc-4eb0-8d54-c6b25336130c"

@@ -93,7 +93,7 @@
 
 <script>
 // Leaderboard API (Cloudflare Worker). Empty string disables the leaderboard.
-const API = '';
+const API = 'https://zdibanka-deploy-api.avhrst.workers.dev';
 (() => {
   const tg = window.Telegram && Telegram.WebApp && Telegram.WebApp.initData !== undefined ? Telegram.WebApp : null;
   if (tg) { tg.ready(); tg.expand(); try { tg.disableVerticalSwipes && tg.disableVerticalSwipes(); } catch (e) {} }
