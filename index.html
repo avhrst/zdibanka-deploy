@@ -60,6 +60,7 @@
     <div class="legend">
       ✅ ☕ <span data-t="good"></span><br>
       🐛 🔥 <span data-t="bad"></span><br>
+      🧔 <span data-t="myr"></span><br>
       <img class="ava" src="tori.jpg" alt=""> <span data-t="duck"></span><br>
       👆 <span data-t="how"></span>
     </div>
@@ -103,7 +104,7 @@ const API = 'https://zdibanka-deploy-api.avhrst.workers.dev';
   const lang = ((tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.language_code) || navigator.language || 'en').slice(0, 2);
   const STR = {
     en: { title: 'Friday Deploy', tagline: 'Ship it before the weekend. What could go wrong?',
-      good: 'commits & coffee — points', bad: 'bugs & prod fires — lose a life', duck: 'Tori — clears all bugs',
+      good: 'commits & coffee — points', bad: 'bugs & prod fires — lose a life', duck: 'Tori — clears all bugs', myr: 'Mÿr — takes one life',
       how: 'drag to move Roma', play: 'Deploy to prod', over: 'Prod is down', again: 'Hotfix & retry', share: 'Share score',
       best: 'Best', newBest: '🏆 New personal best!', level: 'Sprint', speed: '⚡ Deadline moved up!',
       ranks: ['Intern who pushed to main', 'Junior dev', 'Middle dev', 'Senior dev', 'Tech lead', 'CTO', '10x engineer', 'Linus himself'],
@@ -112,7 +113,7 @@ const API = 'https://zdibanka-deploy-api.avhrst.workers.dev';
       openInTg: 'Open the game from Telegram to see the leaderboard.', lbError: 'Leaderboard is unavailable right now.',
       yourRank: (r, b) => `Your place: #${r} (${b})` },
     uk: { title: 'Деплой у пʼятницю', tagline: 'Задеплой до вихідних. Що може піти не так?',
-      good: 'коміти та кава — бали', bad: 'баги та пожежі на проді — мінус життя', duck: 'Торі — прибирає всі баги',
+      good: 'коміти та кава — бали', bad: 'баги та пожежі на проді — мінус життя', duck: 'Торі — прибирає всі баги', myr: 'Mÿr — забирає одне життя',
       how: 'тягни, щоб рухати Рому', play: 'Деплой на прод', over: 'Прод лежить', again: 'Хотфікс і ще раз', share: 'Поділитись',
       best: 'Рекорд', newBest: '🏆 Новий особистий рекорд!', level: 'Спринт', speed: '⚡ Дедлайн перенесли раніше!',
       ranks: ['Стажер, що пушнув у main', 'Джун', 'Мідл', 'Сеньйор', 'Техлід', 'CTO', '10x інженер', 'Сам Лінус'],
@@ -172,6 +173,7 @@ const API = 'https://zdibanka-deploy-api.avhrst.workers.dev';
     { e: '🐛', good: false, w: 34 },
     { e: '🔥', good: false, w: 12 },
     { e: '🦆', duck: true, w: 3, img: toriImg },
+    { e: '🧔', good: false, w: 9, label: 'Mÿr', pop: 'MŸR!' },
   ];
   let player, items, parts, popups, score, lives, best = 0, t, spawnT, speed, level, shake, running, combo, lastTs;
 
@@ -247,7 +249,7 @@ const API = 'https://zdibanka-deploy-api.avhrst.workers.dev';
         } else {
           lives--; combo = 0; shake = 0.35;
           burst(ix, it.y, '#f87171', 20); haptic('hit');
-          popups.push({ x: ix, y: it.y, text: it.type.e === '🔥' ? 'PROD!' : 'BUG!', life: .9 });
+          popups.push({ x: ix, y: it.y, text: it.type.pop || (it.type.e === '🔥' ? 'PROD!' : 'BUG!'), life: .9 });
           if (lives <= 0) { hud(); return gameOver(); }
         }
         hud();
@@ -290,6 +292,12 @@ const API = 'https://zdibanka-deploy-api.avhrst.workers.dev';
         ctx.save(); ctx.beginPath(); ctx.arc(ix, it.y, r, 0, Math.PI * 2); ctx.clip();
         ctx.drawImage(im, ix - r, it.y - r, r * 2, r * 2); ctx.restore();
         ctx.lineWidth = 3; ctx.strokeStyle = '#ffd84a'; ctx.beginPath(); ctx.arc(ix, it.y, r, 0, Math.PI * 2); ctx.stroke();
+      } else if (it.type.label) {
+        const r = it.size * 0.62;
+        ctx.fillStyle = 'rgba(248,113,113,0.22)'; ctx.beginPath(); ctx.arc(ix, it.y, r, 0, Math.PI * 2); ctx.fill();
+        ctx.lineWidth = 3; ctx.strokeStyle = '#f87171'; ctx.stroke();
+        ctx.font = `${it.size * 0.78}px serif`; ctx.fillStyle = C.fg; ctx.fillText(it.type.e, ix, it.y + 1);
+        ctx.font = 'bold 12px sans-serif'; ctx.fillStyle = '#f87171'; ctx.fillText(it.type.label, ix, it.y + r + 10);
       } else { ctx.font = `${it.size}px serif`; ctx.fillText(it.type.e, ix, it.y); }
     }
 
