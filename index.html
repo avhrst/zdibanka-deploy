@@ -103,7 +103,7 @@ const API = 'https://zdibanka-deploy-api.avhrst.workers.dev';
   const STR = {
     en: { title: 'Friday Deploy', tagline: 'Ship it before the weekend. What could go wrong?',
       good: 'commits & coffee — points', bad: 'bugs & prod fires — lose a life', duck: 'rubber duck — clears all bugs',
-      how: 'drag to move your laptop', play: 'Deploy to prod', over: 'Prod is down', again: 'Hotfix & retry', share: 'Share score',
+      how: 'drag to move Roma', play: 'Deploy to prod', over: 'Prod is down', again: 'Hotfix & retry', share: 'Share score',
       best: 'Best', newBest: '🏆 New personal best!', level: 'Sprint', speed: '⚡ Deadline moved up!',
       ranks: ['Intern who pushed to main', 'Junior dev', 'Middle dev', 'Senior dev', 'Tech lead', 'CTO', '10x engineer', 'Linus himself'],
       shareText: s => `I shipped ${s} points on Friday Deploy 🚀 Can you beat me?`,
@@ -112,7 +112,7 @@ const API = 'https://zdibanka-deploy-api.avhrst.workers.dev';
       yourRank: (r, b) => `Your place: #${r} (${b})` },
     uk: { title: 'Деплой у пʼятницю', tagline: 'Задеплой до вихідних. Що може піти не так?',
       good: 'коміти та кава — бали', bad: 'баги та пожежі на проді — мінус життя', duck: 'гумова качка — прибирає всі баги',
-      how: 'тягни, щоб рухати ноутбук', play: 'Деплой на прод', over: 'Прод лежить', again: 'Хотфікс і ще раз', share: 'Поділитись',
+      how: 'тягни, щоб рухати Рому', play: 'Деплой на прод', over: 'Прод лежить', again: 'Хотфікс і ще раз', share: 'Поділитись',
       best: 'Рекорд', newBest: '🏆 Новий особистий рекорд!', level: 'Спринт', speed: '⚡ Дедлайн перенесли раніше!',
       ranks: ['Стажер, що пушнув у main', 'Джун', 'Мідл', 'Сеньйор', 'Техлід', 'CTO', '10x інженер', 'Сам Лінус'],
       shareText: s => `Я набрав ${s} балів у «Деплой у пʼятницю» 🚀 Перевершиш?`,
@@ -170,6 +170,7 @@ const API = 'https://zdibanka-deploy-api.avhrst.workers.dev';
     { e: '🔥', good: false, w: 12 },
     { e: '🦆', duck: true, w: 3 },
   ];
+  const playerImg = new Image(); playerImg.src = 'player.jpg';
   let player, items, parts, popups, score, lives, best = 0, t, spawnT, speed, level, shake, running, combo, lastTs;
 
   function pick() {
@@ -285,8 +286,14 @@ const API = 'https://zdibanka-deploy-api.avhrst.workers.dev';
     if (player) {
       ctx.globalAlpha = 0.25; ctx.fillStyle = C.accent;
       ctx.beginPath(); ctx.ellipse(player.x, player.y + player.size * 0.45, player.size * 0.5, 6, 0, 0, Math.PI * 2); ctx.fill();
-      ctx.globalAlpha = 1; ctx.font = `${player.size}px serif`; ctx.fillText('💻', player.x, player.y);
-      if (combo >= 10) { ctx.font = 'bold 13px sans-serif'; ctx.fillStyle = C.accent; ctx.fillText(`x${Math.min(5, 1 + Math.floor(combo / 10))} combo`, player.x, player.y - player.size * 0.7); }
+      ctx.globalAlpha = 1;
+      if (playerImg.complete && playerImg.naturalWidth) {
+        const r = player.size * 0.55;
+        ctx.save(); ctx.beginPath(); ctx.arc(player.x, player.y, r, 0, Math.PI * 2); ctx.clip();
+        ctx.drawImage(playerImg, player.x - r, player.y - r, r * 2, r * 2); ctx.restore();
+        ctx.lineWidth = 3; ctx.strokeStyle = C.accent; ctx.beginPath(); ctx.arc(player.x, player.y, r, 0, Math.PI * 2); ctx.stroke();
+      } else { ctx.font = `${player.size}px serif`; ctx.fillText('💻', player.x, player.y); }
+      if (combo >= 10) { ctx.font = 'bold 13px sans-serif'; ctx.fillStyle = C.accent; ctx.fillText(`x${Math.min(5, 1 + Math.floor(combo / 10))} combo`, player.x, player.y - player.size * 0.8); }
     }
 
     for (const p of parts) { ctx.globalAlpha = Math.max(0, p.life / .6); ctx.fillStyle = p.color; ctx.fillRect(p.x - 2, p.y - 2, 4, 4); }
