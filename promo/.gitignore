@@ -1,0 +1,6 @@
+.venv/
+v*.mp3
+s*.svg
+*.png
+*.jpg
+music.wav
