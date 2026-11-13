@@ -1,0 +1,81 @@
+{
+ "total": 60.0,
+ "bpm": 120,
+ "scenes": [
+  {
+   "start": 0.0,
+   "dur": 10,
+   "vo": 1.4,
+   "voDur": 8.088,
+   "cues": {
+    "friday": 1.506,
+    "evening": 3.303,
+    "space": 4.956,
+    "deploy": 7.164,
+    "prod": 8.164
+   }
+  },
+  {
+   "start": 10.0,
+   "dur": 10,
+   "vo": 10.6,
+   "voDur": 8.736,
+   "cues": {
+    "armada": 10.706,
+    "planet": 12.442,
+    "fires": 14.058,
+    "legacy": 15.822,
+    "bombs": 17.614
+   }
+  },
+  {
+   "start": 20.0,
+   "dur": 10,
+   "vo": 20.6,
+   "voDur": 8.088,
+   "cues": {
+    "captain": 21.636,
+    "stop": 22.775,
+    "roma": 24.517,
+    "plasma": 26.6,
+    "ball": 27.225
+   }
+  },
+  {
+   "start": 30.0,
+   "dur": 12,
+   "vo": 30.6,
+   "voDur": 10.656,
+   "cues": {
+    "tori": 30.706,
+    "myr": 33.156,
+    "multi": 35.628,
+    "rocket": 38.767,
+    "burn": 39.322
+   }
+  },
+  {
+   "start": 42.0,
+   "dur": 8,
+   "vo": 42.6,
+   "voDur": 6.816,
+   "cues": {
+    "wall": 43.344,
+    "sprint": 45.336,
+    "board": 47.336
+   }
+  },
+  {
+   "start": 50.0,
+   "dur": 10,
+   "vo": 50.9,
+   "voDur": 7.248,
+   "cues": {
+    "title": 51.006,
+    "play": 53.664,
+    "telegram": 54.456,
+    "now": 56.65
+   }
+  }
+ ]
+}

@@ -1,0 +1,10 @@
+# generated intermediates
+audio.wav
+video.mp4
+vo*.mp3
+stills/
+*.png
+thumb.jpg
+# photos used by space.html
+!roma.jpg
+!tori.jpg
