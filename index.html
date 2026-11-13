@@ -302,7 +302,7 @@
   }
 
   function share() {
-    const url = window.SHARE_URL || location.href.split('#')[0];
+    const url = "https://t.me/zdibanka_deploy_bot/deploy";
     const link = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(T.shareText(score))}`;
     if (tg && tg.openTelegramLink) tg.openTelegramLink(link); else window.open(link, '_blank');
   }
