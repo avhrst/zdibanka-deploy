@@ -36,6 +36,7 @@
   .btn { display: block; width: 100%; border: 0; border-radius: 12px; padding: 14px; font-size: 16px;
     font-weight: 700; background: var(--accent); color: var(--accent-fg); cursor: pointer; margin-top: 10px; }
   .btn.secondary { background: transparent; color: var(--accent); border: 2px solid var(--accent); }
+  .ava { width: 20px; height: 20px; border-radius: 50%; vertical-align: -4px; object-fit: cover; }
   .rank { color: var(--hint); font-size: 14px; margin-bottom: 8px; }
   .lb { list-style: none; margin: 0 0 6px; padding: 0; text-align: left; max-height: 52vh; overflow-y: auto; }
   .lb li { display: flex; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 10px; font-size: 15px; }
@@ -59,7 +60,7 @@
     <div class="legend">
       ✅ ☕ <span data-t="good"></span><br>
       🐛 🔥 <span data-t="bad"></span><br>
-      🦆 <span data-t="duck"></span><br>
+      <img class="ava" src="tori.jpg" alt=""> <span data-t="duck"></span><br>
       👆 <span data-t="how"></span>
     </div>
     <button class="btn" id="play" data-t="play"></button>
@@ -102,7 +103,7 @@ const API = 'https://zdibanka-deploy-api.avhrst.workers.dev';
   const lang = ((tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.language_code) || navigator.language || 'en').slice(0, 2);
   const STR = {
     en: { title: 'Friday Deploy', tagline: 'Ship it before the weekend. What could go wrong?',
-      good: 'commits & coffee — points', bad: 'bugs & prod fires — lose a life', duck: 'rubber duck — clears all bugs',
+      good: 'commits & coffee — points', bad: 'bugs & prod fires — lose a life', duck: 'Tori — clears all bugs',
       how: 'drag to move Roma', play: 'Deploy to prod', over: 'Prod is down', again: 'Hotfix & retry', share: 'Share score',
       best: 'Best', newBest: '🏆 New personal best!', level: 'Sprint', speed: '⚡ Deadline moved up!',
       ranks: ['Intern who pushed to main', 'Junior dev', 'Middle dev', 'Senior dev', 'Tech lead', 'CTO', '10x engineer', 'Linus himself'],
@@ -111,7 +112,7 @@ const API = 'https://zdibanka-deploy-api.avhrst.workers.dev';
       openInTg: 'Open the game from Telegram to see the leaderboard.', lbError: 'Leaderboard is unavailable right now.',
       yourRank: (r, b) => `Your place: #${r} (${b})` },
     uk: { title: 'Деплой у пʼятницю', tagline: 'Задеплой до вихідних. Що може піти не так?',
-      good: 'коміти та кава — бали', bad: 'баги та пожежі на проді — мінус життя', duck: 'гумова качка — прибирає всі баги',
+      good: 'коміти та кава — бали', bad: 'баги та пожежі на проді — мінус життя', duck: 'Торі — прибирає всі баги',
       how: 'тягни, щоб рухати Рому', play: 'Деплой на прод', over: 'Прод лежить', again: 'Хотфікс і ще раз', share: 'Поділитись',
       best: 'Рекорд', newBest: '🏆 Новий особистий рекорд!', level: 'Спринт', speed: '⚡ Дедлайн перенесли раніше!',
       ranks: ['Стажер, що пушнув у main', 'Джун', 'Мідл', 'Сеньйор', 'Техлід', 'CTO', '10x інженер', 'Сам Лінус'],
@@ -163,14 +164,15 @@ const API = 'https://zdibanka-deploy-api.avhrst.workers.dev';
               accent: css.getPropertyValue('--accent').trim() || '#3d8bfd' };
 
   // ---------- game state ----------
+  const playerImg = new Image(); playerImg.src = 'player.jpg';
+  const toriImg = new Image(); toriImg.src = 'tori.jpg';
   const TYPES = [
     { e: '✅', pts: 10, good: true, w: 40 },
     { e: '☕', pts: 5,  good: true, w: 30 },
     { e: '🐛', good: false, w: 34 },
     { e: '🔥', good: false, w: 12 },
-    { e: '🦆', duck: true, w: 3 },
+    { e: '🦆', duck: true, w: 3, img: toriImg },
   ];
-  const playerImg = new Image(); playerImg.src = 'player.jpg';
   let player, items, parts, popups, score, lives, best = 0, t, spawnT, speed, level, shake, running, combo, lastTs;
 
   function pick() {
@@ -235,7 +237,7 @@ const API = 'https://zdibanka-deploy-api.avhrst.workers.dev';
           let cleared = 0;
           for (let j = items.length - 1; j >= 0; j--) if (items[j].type.good === false) {
             burst(items[j].x, items[j].y, '#ffd84a', 8); items.splice(j, 1); cleared++; }
-          score += 20 + cleared * 5; popups.push({ x: ix, y: it.y, text: `🦆 +${20 + cleared * 5}`, life: 1 });
+          score += 20 + cleared * 5; popups.push({ x: ix, y: it.y, text: `+${20 + cleared * 5}`, life: 1 });
           burst(ix, it.y, '#ffd84a', 24); haptic('duck');
         } else if (it.type.good) {
           combo++;
@@ -281,7 +283,15 @@ const API = 'https://zdibanka-deploy-api.avhrst.workers.dev';
     ctx.globalAlpha = 1;
 
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    for (const it of items) { ctx.font = `${it.size}px serif`; ctx.fillText(it.type.e, it.x + Math.sin(it.wob) * it.wobA, it.y); }
+    for (const it of items) {
+      const ix = it.x + Math.sin(it.wob) * it.wobA, im = it.type.img;
+      if (im && im.complete && im.naturalWidth) {
+        const r = it.size * 0.62;
+        ctx.save(); ctx.beginPath(); ctx.arc(ix, it.y, r, 0, Math.PI * 2); ctx.clip();
+        ctx.drawImage(im, ix - r, it.y - r, r * 2, r * 2); ctx.restore();
+        ctx.lineWidth = 3; ctx.strokeStyle = '#ffd84a'; ctx.beginPath(); ctx.arc(ix, it.y, r, 0, Math.PI * 2); ctx.stroke();
+      } else { ctx.font = `${it.size}px serif`; ctx.fillText(it.type.e, ix, it.y); }
+    }
 
     if (player) {
       ctx.globalAlpha = 0.25; ctx.fillStyle = C.accent;
