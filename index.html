@@ -58,8 +58,8 @@
     <h1 data-t="title"></h1>
     <p class="sub" data-t="tagline"></p>
     <div class="legend">
-      ✅ ☕ <span data-t="good"></span><br>
       🐛 🔥 <span data-t="bad"></span><br>
+      ✅ ☕ <span data-t="good"></span><br>
       🧔 <span data-t="myr"></span><br>
       <img class="ava" src="tori.jpg" alt=""> <span data-t="duck"></span><br>
       👆 <span data-t="how"></span>
@@ -104,18 +104,18 @@ const API = 'https://zdibanka-deploy-api.avhrst.workers.dev';
   const lang = ((tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.language_code) || navigator.language || 'en').slice(0, 2);
   const STR = {
     en: { title: 'Friday Deploy', tagline: 'Ship it before the weekend. What could go wrong?',
-      good: 'commits & coffee — points', bad: 'bugs & prod fires — lose a life', duck: 'Tori — clears all bugs', myr: 'Mÿr — takes one life',
-      how: 'drag to move Roma', play: 'Deploy to prod', over: 'Prod is down', again: 'Hotfix & retry', share: 'Share score',
-      best: 'Best', newBest: '🏆 New personal best!', level: 'Sprint', speed: '⚡ Deadline moved up!',
+      bad: 'smash bugs & prod fires with the ball', good: 'catch commits & coffee — bonuses', duck: 'Tori — smashes a bunch of bugs', myr: 'Mÿr — takes one life',
+      how: 'drag Roma, don’t drop the ball', play: 'Deploy to prod', over: 'Prod is down', again: 'Hotfix & retry', share: 'Share score',
+      best: 'Best', newBest: '🏆 New personal best!', level: 'Sprint', speed: '⚡ more bugs, faster ball!',
       ranks: ['Intern who pushed to main', 'Junior dev', 'Middle dev', 'Senior dev', 'Tech lead', 'CTO', '10x engineer', 'Linus himself'],
       shareText: s => `I shipped ${s} points on Friday Deploy 🚀 Can you beat me?`,
       leaderboard: 'Leaderboard', close: 'Close', loading: 'Loading…', empty: 'No scores yet — be the first!',
       openInTg: 'Open the game from Telegram to see the leaderboard.', lbError: 'Leaderboard is unavailable right now.',
       yourRank: (r, b) => `Your place: #${r} (${b})` },
     uk: { title: 'Деплой у пʼятницю', tagline: 'Задеплой до вихідних. Що може піти не так?',
-      good: 'коміти та кава — бали', bad: 'баги та пожежі на проді — мінус життя', duck: 'Торі — прибирає всі баги', myr: 'Mÿr — забирає одне життя',
-      how: 'тягни, щоб рухати Рому', play: 'Деплой на прод', over: 'Прод лежить', again: 'Хотфікс і ще раз', share: 'Поділитись',
-      best: 'Рекорд', newBest: '🏆 Новий особистий рекорд!', level: 'Спринт', speed: '⚡ Дедлайн перенесли раніше!',
+      bad: 'розбивай мʼячем баги та пожежі на проді', good: 'лови коміти та каву — бонуси', duck: 'Торі — розносить купу багів', myr: 'Mÿr — забирає одне життя',
+      how: 'тягни Рому, не впусти мʼяч', play: 'Деплой на прод', over: 'Прод лежить', again: 'Хотфікс і ще раз', share: 'Поділитись',
+      best: 'Рекорд', newBest: '🏆 Новий особистий рекорд!', level: 'Спринт', speed: '⚡ більше багів, швидший мʼяч!',
       ranks: ['Стажер, що пушнув у main', 'Джун', 'Мідл', 'Сеньйор', 'Техлід', 'CTO', '10x інженер', 'Сам Лінус'],
       shareText: s => `Я набрав ${s} балів у «Деплой у пʼятницю» 🚀 Перевершиш?`,
       leaderboard: 'Таблиця лідерів', close: 'Закрити', loading: 'Завантаження…', empty: 'Ще немає результатів — будь першим!',
@@ -155,7 +155,7 @@ const API = 'https://zdibanka-deploy-api.avhrst.workers.dev';
     W = window.innerWidth; H = window.innerHeight;
     cv.width = W * DPR; cv.height = H * DPR; cv.style.width = W + 'px'; cv.style.height = H + 'px';
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-    if (player) player.y = H - 70;
+    if (player) player.y = H - 86;
   }
   window.addEventListener('resize', resize);
   if (tg) tg.onEvent('viewportChanged', resize);
@@ -167,27 +167,44 @@ const API = 'https://zdibanka-deploy-api.avhrst.workers.dev';
   // ---------- game state ----------
   const playerImg = new Image(); playerImg.src = 'player.jpg';
   const toriImg = new Image(); toriImg.src = 'tori.jpg';
-  const TYPES = [
-    { e: '✅', pts: 10, good: true, w: 40 },
-    { e: '☕', pts: 5,  good: true, w: 30 },
-    { e: '🐛', good: false, w: 34 },
-    { e: '🔥', good: false, w: 12 },
-    { e: '🦆', duck: true, w: 3, img: toriImg },
-    { e: '🧔', good: false, w: 9, label: 'Mÿr', pop: 'MŸR!' },
+  // Drops that fall out of broken bricks.
+  const DROPS = [
+    { e: '✅', pts: 30, good: true, w: 40 },
+    { e: '☕', pts: 10, good: true, wide: true, w: 25 },
+    { e: '🦆', tori: true, w: 10, img: toriImg },
+    { e: '🧔', good: false, w: 18, label: 'Mÿr', pop: 'MŸR!' },
   ];
-  let player, items, parts, popups, score, lives, best = 0, t, spawnT, speed, level, shake, running, combo, lastTs;
+  const DROP_CHANCE = 0.24, TOP = 64, BRICK_H = 26, GAP = 6, PADDLE_W = 96, WIDE_SEC = 10;
+  let player, ball, bricks, items, parts, popups, score, lives, best = 0, t, speed, level, shake, running, combo, lastTs, wideT;
 
   function pick() {
-    const total = TYPES.reduce((s, x) => s + x.w, 0);
+    const total = DROPS.reduce((s, x) => s + x.w, 0);
     let r = Math.random() * total;
-    for (const x of TYPES) { if ((r -= x.w) < 0) return x; }
-    return TYPES[0];
+    for (const x of DROPS) { if ((r -= x.w) < 0) return x; }
+    return DROPS[0];
   }
 
+  function buildLevel() {
+    const cols = Math.max(6, Math.min(10, Math.floor(W / 52)));
+    const rows = Math.min(3 + level, 8);
+    const bw = (W - GAP * (cols + 1)) / cols;
+    bricks = [];
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+      if (level > 1 && Math.random() < 0.08) continue;           // a few holes on later sprints
+      const fire = Math.random() < Math.min(0.5, 0.12 + level * 0.06);
+      bricks.push({ x: GAP + c * (bw + GAP), y: TOP + r * (BRICK_H + GAP), w: bw, h: BRICK_H, fire, hp: fire ? 2 : 1 });
+    }
+    speed = Math.min(620, 380 + (level - 1) * 35);
+    resetBall();
+  }
+
+  function resetBall() { ball = { x: player.x, y: player.y - 16, vx: 0, vy: 0, r: 8, stuck: 0.9 }; }
+
   function reset() {
-    player = { x: W / 2, y: H - 70, tx: W / 2, size: 54 };
+    player = { x: W / 2, y: H - 86, tx: W / 2, w: PADDLE_W, size: 44 };
     items = []; parts = []; popups = [];
-    score = 0; lives = 3; t = 0; spawnT = 0; speed = 1; level = 1; shake = 0; combo = 0;
+    score = 0; lives = 3; t = 0; level = 1; shake = 0; combo = 0; wideT = 0;
+    buildLevel();
     hud();
   }
 
@@ -210,48 +227,105 @@ const API = 'https://zdibanka-deploy-api.avhrst.workers.dev';
     }
   }
 
-  function spawn() {
-    const type = pick();
-    const size = 34 + Math.random() * 8;
-    items.push({ type, size, x: size / 2 + Math.random() * (W - size), y: -size,
-      vy: (110 + Math.random() * 70) * speed, wob: Math.random() * Math.PI * 2, wobA: type.good === false ? 30 * Math.random() : 0 });
+  function mult() { return Math.min(5, 1 + Math.floor(combo / 4)); }
+
+  function breakBrick(i, withDrop) {
+    const b = bricks[i]; bricks.splice(i, 1);
+    const cx = b.x + b.w / 2, cy = b.y + b.h / 2;
+    const gain = (b.fire ? 25 : 10) * mult();
+    score += gain; popups.push({ x: cx, y: cy, text: `+${gain}`, life: .7 });
+    burst(cx, cy, b.fire ? '#fb923c' : '#4ade80', 10);
+    if (withDrop && Math.random() < DROP_CHANCE) {
+      const type = pick();
+      items.push({ type, size: 34, x: cx, y: cy, vy: 130 + Math.random() * 40 + level * 8, wob: Math.random() * 6, wobA: 0 });
+    }
+  }
+
+  function loseLife(x, y, text) {
+    lives--; combo = 0; shake = 0.35; haptic('hit');
+    burst(x, y, '#f87171', 20); popups.push({ x, y, text, life: .9 });
+    hud();
+    if (lives <= 0) { gameOver(); return true; }
+    return false;
+  }
+
+  function moveBall(dt) {
+    if (ball.stuck > 0) {
+      ball.stuck -= dt; ball.x = player.x; ball.y = player.y - 8 - ball.r;
+      if (ball.stuck <= 0) { const a = (Math.random() - .5) * 0.9; ball.vx = speed * Math.sin(a); ball.vy = -speed * Math.cos(a); }
+      return false;
+    }
+    const steps = Math.max(1, Math.ceil(speed * dt / 5)), h = dt / steps;
+    for (let n = 0; n < steps; n++) {
+      ball.x += ball.vx * h; ball.y += ball.vy * h;
+      if (ball.x < ball.r) { ball.x = ball.r; ball.vx = Math.abs(ball.vx); }
+      if (ball.x > W - ball.r) { ball.x = W - ball.r; ball.vx = -Math.abs(ball.vx); }
+      if (ball.y < 44 + ball.r) { ball.y = 44 + ball.r; ball.vy = Math.abs(ball.vy); }
+
+      // paddle
+      const top = player.y - 8;
+      if (ball.vy > 0 && ball.y + ball.r >= top && ball.y - ball.r <= top + 14 && Math.abs(ball.x - player.x) <= player.w / 2 + ball.r) {
+        const off = Math.max(-1, Math.min(1, (ball.x - player.x) / (player.w / 2)));
+        const a = off * 1.05;                                       // up to ~60° from vertical
+        ball.vx = speed * Math.sin(a); ball.vy = -speed * Math.cos(a); ball.y = top - ball.r;
+        combo = 0; haptic('tap');
+      }
+
+      // bricks
+      for (let i = 0; i < bricks.length; i++) {
+        const b = bricks[i];
+        const nx = Math.max(b.x, Math.min(ball.x, b.x + b.w)), ny = Math.max(b.y, Math.min(ball.y, b.y + b.h));
+        const dx = ball.x - nx, dy = ball.y - ny;
+        if (dx * dx + dy * dy > ball.r * ball.r) continue;
+        const ox = Math.min(ball.x + ball.r - b.x, b.x + b.w - (ball.x - ball.r));
+        const oy = Math.min(ball.y + ball.r - b.y, b.y + b.h - (ball.y - ball.r));
+        if (ox < oy) { ball.vx = (ball.x < b.x + b.w / 2 ? -1 : 1) * Math.abs(ball.vx); }
+        else { ball.vy = (ball.y < b.y + b.h / 2 ? -1 : 1) * Math.abs(ball.vy); }
+        if (--b.hp <= 0) { combo++; breakBrick(i, true); } else { burst(nx, ny, '#fb923c', 5); }
+        haptic('tap'); hud();
+        break;
+      }
+
+      if (ball.y - ball.r > H) {
+        if (loseLife(ball.x, H - 30, 'OOPS!')) return true;
+        resetBall(); return false;
+      }
+    }
+    return false;
   }
 
   function step(dt) {
     t += dt;
-    const newLevel = 1 + Math.floor(t / 20);
-    if (newLevel > level) { level = newLevel; speed = 1 + (level - 1) * 0.18; banner(`${T.level} ${level} — ${T.speed}`); }
+    if (wideT > 0) { wideT -= dt; if (wideT <= 0) player.w = PADDLE_W; }
 
-    spawnT -= dt;
-    if (spawnT <= 0) { spawn(); spawnT = Math.max(0.22, 0.75 - level * 0.05) * (0.7 + Math.random() * 0.6); }
+    player.x += (player.tx - player.x) * Math.min(1, dt * 22);
+    player.x = Math.max(player.w / 2, Math.min(W - player.w / 2, player.x));
 
-    player.x += (player.tx - player.x) * Math.min(1, dt * 18);
-    player.x = Math.max(player.size / 2, Math.min(W - player.size / 2, player.x));
+    if (moveBall(dt)) return;
+
+    if (!bricks.length) {
+      const bonus = 100 * level; score += bonus; level++;
+      popups.push({ x: W / 2, y: H / 2, text: `+${bonus}`, life: 1.2 });
+      banner(`${T.level} ${level} — ${T.speed}`); haptic('duck');
+      items = []; buildLevel(); hud();
+    }
 
     for (let i = items.length - 1; i >= 0; i--) {
       const it = items[i];
       it.y += it.vy * dt; it.wob += dt * 3;
-      const ix = it.x + Math.sin(it.wob) * it.wobA;
-      const dx = ix - player.x, dy = it.y - player.y;
-      if (Math.abs(dx) < (player.size + it.size) * 0.42 && Math.abs(dy) < (player.size + it.size) * 0.38) {
+      const top = player.y - 8;
+      if (it.y + it.size * 0.4 >= top && it.y - it.size * 0.4 <= top + 14 && Math.abs(it.x - player.x) <= player.w / 2 + it.size * 0.4) {
         items.splice(i, 1);
-        if (it.type.duck) {
-          let cleared = 0;
-          for (let j = items.length - 1; j >= 0; j--) if (items[j].type.good === false) {
-            burst(items[j].x, items[j].y, '#ffd84a', 8); items.splice(j, 1); cleared++; }
-          score += 20 + cleared * 5; popups.push({ x: ix, y: it.y, text: `+${20 + cleared * 5}`, life: 1 });
-          burst(ix, it.y, '#ffd84a', 24); haptic('duck');
+        if (it.type.tori) {
+          // Tori fixes things: smashes up to 8 of the lowest bricks.
+          const order = bricks.map((b, k) => k).sort((a, b) => bricks[b].y - bricks[a].y || Math.random() - .5).slice(0, 8).sort((a, b) => b - a);
+          for (const k of order) breakBrick(k, false);
+          burst(it.x, it.y, '#ffd84a', 24); haptic('duck');
         } else if (it.type.good) {
-          combo++;
-          const gain = it.type.pts * Math.min(5, 1 + Math.floor(combo / 10));
-          score += gain; popups.push({ x: ix, y: it.y, text: `+${gain}`, life: .8 });
-          burst(ix, it.y, '#4ade80', 10); haptic('tap');
-        } else {
-          lives--; combo = 0; shake = 0.35;
-          burst(ix, it.y, '#f87171', 20); haptic('hit');
-          popups.push({ x: ix, y: it.y, text: it.type.pop || (it.type.e === '🔥' ? 'PROD!' : 'BUG!'), life: .9 });
-          if (lives <= 0) { hud(); return gameOver(); }
-        }
+          score += it.type.pts; popups.push({ x: it.x, y: it.y, text: `+${it.type.pts}`, life: .8 });
+          if (it.type.wide) { player.w = PADDLE_W * 1.6; wideT = WIDE_SEC; }
+          burst(it.x, it.y, '#4ade80', 10); haptic('tap');
+        } else if (loseLife(it.x, it.y, it.type.pop)) return;
         hud();
         continue;
       }
@@ -280,13 +354,23 @@ const API = 'https://zdibanka-deploy-api.avhrst.workers.dev';
     if (shake > 0) ctx.translate((Math.random() - .5) * 14 * shake / .35, (Math.random() - .5) * 14 * shake / .35);
 
     ctx.globalAlpha = 0.09; ctx.fillStyle = C.fg; ctx.font = '13px ui-monospace, Menlo, monospace'; ctx.textAlign = 'left';
-    for (const l of bg) { l.y += l.v * dt * (running ? speed : 0.5); if (l.y > 1.05) { l.y = -0.05; l.x = Math.random(); }
+    for (const l of bg) { l.y += l.v * dt * (running ? 1 + level * 0.2 : 0.5); if (l.y > 1.05) { l.y = -0.05; l.x = Math.random(); }
       ctx.fillText(l.text, l.x * (W - 120), l.y * H); }
     ctx.globalAlpha = 1;
 
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    // bricks
+    const rr = (x, y, w, h, r) => { ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(x, y, w, h, r); else ctx.rect(x, y, w, h); };
+    if (bricks) for (const b of bricks) {
+      ctx.fillStyle = b.fire ? (b.hp > 1 ? 'rgba(251,146,60,0.55)' : 'rgba(251,146,60,0.28)') : 'rgba(74,222,128,0.30)';
+      rr(b.x, b.y, b.w, b.h, 7); ctx.fill();
+      ctx.lineWidth = 1.5; ctx.strokeStyle = b.fire ? '#fb923c' : '#4ade80'; ctx.stroke();
+      ctx.font = '17px serif'; ctx.fillStyle = C.fg; ctx.fillText(b.fire ? '🔥' : '🐛', b.x + b.w / 2, b.y + b.h / 2 + 1);
+    }
+
+    // falling drops
     for (const it of items) {
-      const ix = it.x + Math.sin(it.wob) * it.wobA, im = it.type.img;
+      const ix = it.x, im = it.type.img;
       if (im && im.complete && im.naturalWidth) {
         const r = it.size * 0.62;
         ctx.save(); ctx.beginPath(); ctx.arc(ix, it.y, r, 0, Math.PI * 2); ctx.clip();
@@ -298,20 +382,26 @@ const API = 'https://zdibanka-deploy-api.avhrst.workers.dev';
         ctx.lineWidth = 3; ctx.strokeStyle = '#f87171'; ctx.stroke();
         ctx.font = `${it.size * 0.78}px serif`; ctx.fillStyle = C.fg; ctx.fillText(it.type.e, ix, it.y + 1);
         ctx.font = 'bold 12px sans-serif'; ctx.fillStyle = '#f87171'; ctx.fillText(it.type.label, ix, it.y + r + 10);
-      } else { ctx.font = `${it.size}px serif`; ctx.fillText(it.type.e, ix, it.y); }
+      } else { ctx.font = `${it.size}px serif`; ctx.fillStyle = C.fg; ctx.fillText(it.type.e, ix, it.y); }
     }
 
     if (player) {
-      ctx.globalAlpha = 0.25; ctx.fillStyle = C.accent;
-      ctx.beginPath(); ctx.ellipse(player.x, player.y + player.size * 0.45, player.size * 0.5, 6, 0, 0, Math.PI * 2); ctx.fill();
-      ctx.globalAlpha = 1;
+      // paddle bar, with Roma holding it from below
+      const top = player.y - 8;
+      ctx.fillStyle = wideT > 0 ? '#4ade80' : C.accent;
+      rr(player.x - player.w / 2, top, player.w, 14, 7); ctx.fill();
+      const r = player.size / 2, cy = player.y + 10 + r;
       if (playerImg.complete && playerImg.naturalWidth) {
-        const r = player.size * 0.55;
-        ctx.save(); ctx.beginPath(); ctx.arc(player.x, player.y, r, 0, Math.PI * 2); ctx.clip();
-        ctx.drawImage(playerImg, player.x - r, player.y - r, r * 2, r * 2); ctx.restore();
-        ctx.lineWidth = 3; ctx.strokeStyle = C.accent; ctx.beginPath(); ctx.arc(player.x, player.y, r, 0, Math.PI * 2); ctx.stroke();
-      } else { ctx.font = `${player.size}px serif`; ctx.fillText('💻', player.x, player.y); }
-      if (combo >= 10) { ctx.font = 'bold 13px sans-serif'; ctx.fillStyle = C.accent; ctx.fillText(`x${Math.min(5, 1 + Math.floor(combo / 10))} combo`, player.x, player.y - player.size * 0.8); }
+        ctx.save(); ctx.beginPath(); ctx.arc(player.x, cy, r, 0, Math.PI * 2); ctx.clip();
+        ctx.drawImage(playerImg, player.x - r, cy - r, r * 2, r * 2); ctx.restore();
+        ctx.lineWidth = 3; ctx.strokeStyle = C.accent; ctx.beginPath(); ctx.arc(player.x, cy, r, 0, Math.PI * 2); ctx.stroke();
+      } else { ctx.font = `${player.size}px serif`; ctx.fillText('💻', player.x, cy); }
+      if (mult() > 1) { ctx.font = 'bold 13px sans-serif'; ctx.fillStyle = C.accent; ctx.fillText(`x${mult()} combo`, player.x, top - 26); }
+    }
+
+    if (ball) {
+      ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2); ctx.fill();
+      ctx.lineWidth = 2; ctx.strokeStyle = C.accent; ctx.stroke();
     }
 
     for (const p of parts) { ctx.globalAlpha = Math.max(0, p.life / .6); ctx.fillStyle = p.color; ctx.fillRect(p.x - 2, p.y - 2, 4, 4); }
@@ -333,7 +423,7 @@ const API = 'https://zdibanka-deploy-api.avhrst.workers.dev';
   cv.addEventListener('pointerdown', e => move(e.clientX));
   cv.addEventListener('pointermove', e => { if (e.pointerType === 'mouse' || e.buttons || e.pressure > 0) move(e.clientX); });
   window.addEventListener('keydown', e => { if (!player) return;
-    if (e.key === 'ArrowLeft') player.tx -= 60; if (e.key === 'ArrowRight') player.tx += 60; });
+    if (e.key === 'ArrowLeft') player.tx = player.x - 70; if (e.key === 'ArrowRight') player.tx = player.x + 70; });
 
   // ---------- flow ----------
   function start() {
@@ -346,7 +436,7 @@ const API = 'https://zdibanka-deploy-api.avhrst.workers.dev';
     running = false; haptic('over');
     const isBest = score > best;
     if (isBest) { best = score; store.set('best', best); }
-    const rank = T.ranks[Math.min(T.ranks.length - 1, Math.floor(score / 150))];
+    const rank = T.ranks[Math.min(T.ranks.length - 1, Math.floor(score / 400))];
     document.getElementById('final').textContent = score;
     document.getElementById('rank').textContent = rank;
     document.getElementById('bestline').textContent = isBest && score > 0 ? T.newBest : `${T.best}: ${best}`;
