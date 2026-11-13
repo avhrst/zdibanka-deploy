@@ -37,6 +37,13 @@
     font-weight: 700; background: var(--accent); color: var(--accent-fg); cursor: pointer; margin-top: 10px; }
   .btn.secondary { background: transparent; color: var(--accent); border: 2px solid var(--accent); }
   .rank { color: var(--hint); font-size: 14px; margin-bottom: 8px; }
+  .lb { list-style: none; margin: 0 0 6px; padding: 0; text-align: left; max-height: 52vh; overflow-y: auto; }
+  .lb li { display: flex; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 10px; font-size: 15px; }
+  .lb li.me { background: color-mix(in srgb, var(--accent) 22%, transparent); font-weight: 700; }
+  .lb .pos { width: 28px; text-align: center; color: var(--hint); font-weight: 700; }
+  .lb .nm { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lb .sc { font-variant-numeric: tabular-nums; font-weight: 700; }
+  .lbmsg { color: var(--hint); font-size: 14px; padding: 12px 0; }
 </style>
 </head>
 <body>
@@ -56,6 +63,7 @@
       👆 <span data-t="how"></span>
     </div>
     <button class="btn" id="play" data-t="play"></button>
+    <button class="btn secondary lbopen" data-t="leaderboard"></button>
   </div>
 </div>
 
@@ -67,11 +75,25 @@
     <div class="rank" id="rank"></div>
     <div class="rank" id="bestline"></div>
     <button class="btn" id="again" data-t="again"></button>
+    <button class="btn secondary lbopen" data-t="leaderboard"></button>
     <button class="btn secondary" id="share" data-t="share"></button>
   </div>
 </div>
 
+<div class="overlay hidden" id="lbview">
+  <div class="card">
+    <div style="font-size:40px">🏆</div>
+    <h1 data-t="leaderboard"></h1>
+    <p class="sub">IT Zdibanka</p>
+    <ul class="lb" id="lblist"></ul>
+    <div class="lbmsg" id="lbmsg"></div>
+    <button class="btn" id="lbclose" data-t="close"></button>
+  </div>
+</div>
+
 <script>
+// Leaderboard API (Cloudflare Worker). Empty string disables the leaderboard.
+const API = '';
 (() => {
   const tg = window.Telegram && Telegram.WebApp && Telegram.WebApp.initData !== undefined ? Telegram.WebApp : null;
   if (tg) { tg.ready(); tg.expand(); try { tg.disableVerticalSwipes && tg.disableVerticalSwipes(); } catch (e) {} }
@@ -84,13 +106,19 @@
       how: 'drag to move your laptop', play: 'Deploy to prod', over: 'Prod is down', again: 'Hotfix & retry', share: 'Share score',
       best: 'Best', newBest: '🏆 New personal best!', level: 'Sprint', speed: '⚡ Deadline moved up!',
       ranks: ['Intern who pushed to main', 'Junior dev', 'Middle dev', 'Senior dev', 'Tech lead', 'CTO', '10x engineer', 'Linus himself'],
-      shareText: s => `I shipped ${s} points on Friday Deploy 🚀 Can you beat me?` },
+      shareText: s => `I shipped ${s} points on Friday Deploy 🚀 Can you beat me?`,
+      leaderboard: 'Leaderboard', close: 'Close', loading: 'Loading…', empty: 'No scores yet — be the first!',
+      openInTg: 'Open the game from Telegram to see the leaderboard.', lbError: 'Leaderboard is unavailable right now.',
+      yourRank: (r, b) => `Your place: #${r} (${b})` },
     uk: { title: 'Деплой у пʼятницю', tagline: 'Задеплой до вихідних. Що може піти не так?',
       good: 'коміти та кава — бали', bad: 'баги та пожежі на проді — мінус життя', duck: 'гумова качка — прибирає всі баги',
       how: 'тягни, щоб рухати ноутбук', play: 'Деплой на прод', over: 'Прод лежить', again: 'Хотфікс і ще раз', share: 'Поділитись',
       best: 'Рекорд', newBest: '🏆 Новий особистий рекорд!', level: 'Спринт', speed: '⚡ Дедлайн перенесли раніше!',
       ranks: ['Стажер, що пушнув у main', 'Джун', 'Мідл', 'Сеньйор', 'Техлід', 'CTO', '10x інженер', 'Сам Лінус'],
-      shareText: s => `Я набрав ${s} балів у «Деплой у пʼятницю» 🚀 Перевершиш?` },
+      shareText: s => `Я набрав ${s} балів у «Деплой у пʼятницю» 🚀 Перевершиш?`,
+      leaderboard: 'Таблиця лідерів', close: 'Закрити', loading: 'Завантаження…', empty: 'Ще немає результатів — будь першим!',
+      openInTg: 'Відкрий гру в Telegram, щоб побачити таблицю лідерів.', lbError: 'Таблиця лідерів зараз недоступна.',
+      yourRank: (r, b) => `Твоє місце: #${r} (${b})` },
   };
   const T = STR[lang === 'uk' || lang === 'ru' ? 'uk' : 'en'];
   document.querySelectorAll('[data-t]').forEach(el => { el.textContent = T[el.dataset.t]; });
@@ -210,7 +238,7 @@
           burst(ix, it.y, '#ffd84a', 24); haptic('duck');
         } else if (it.type.good) {
           combo++;
-          const gain = it.type.pts * (1 + Math.floor(combo / 10));
+          const gain = it.type.pts * Math.min(5, 1 + Math.floor(combo / 10));
           score += gain; popups.push({ x: ix, y: it.y, text: `+${gain}`, life: .8 });
           burst(ix, it.y, '#4ade80', 10); haptic('tap');
         } else {
@@ -258,7 +286,7 @@
       ctx.globalAlpha = 0.25; ctx.fillStyle = C.accent;
       ctx.beginPath(); ctx.ellipse(player.x, player.y + player.size * 0.45, player.size * 0.5, 6, 0, 0, Math.PI * 2); ctx.fill();
       ctx.globalAlpha = 1; ctx.font = `${player.size}px serif`; ctx.fillText('💻', player.x, player.y);
-      if (combo >= 10) { ctx.font = 'bold 13px sans-serif'; ctx.fillStyle = C.accent; ctx.fillText(`x${1 + Math.floor(combo / 10)} combo`, player.x, player.y - player.size * 0.7); }
+      if (combo >= 10) { ctx.font = 'bold 13px sans-serif'; ctx.fillStyle = C.accent; ctx.fillText(`x${Math.min(5, 1 + Math.floor(combo / 10))} combo`, player.x, player.y - player.size * 0.7); }
     }
 
     for (const p of parts) { ctx.globalAlpha = Math.max(0, p.life / .6); ctx.fillStyle = p.color; ctx.fillRect(p.x - 2, p.y - 2, 4, 4); }
@@ -299,7 +327,45 @@
     document.getElementById('bestline').textContent = isBest && score > 0 ? T.newBest : `${T.best}: ${best}`;
     document.getElementById('over').classList.remove('hidden');
     hud();
+    submitScore(score, t);
   }
+
+  // ---------- leaderboard ----------
+  const initData = tg && tg.initData;
+  function api(path, opts = {}) {
+    return fetch(API + path, { ...opts, headers: { 'Content-Type': 'application/json', 'X-Init-Data': initData, ...(opts.headers || {}) } })
+      .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
+  }
+  let lastBoard = null;
+  function renderBoard(data) {
+    const list = document.getElementById('lblist'), msg = document.getElementById('lbmsg');
+    list.innerHTML = '';
+    if (!data.top.length) { msg.textContent = T.empty; return; }
+    for (const r of data.top) {
+      const li = document.createElement('li'); if (r.me) li.className = 'me';
+      const medal = ['🥇', '🥈', '🥉'][r.rank - 1] || r.rank;
+      li.innerHTML = '<span class="pos"></span><span class="nm"></span><span class="sc"></span>';
+      li.children[0].textContent = medal; li.children[1].textContent = r.name; li.children[2].textContent = r.best;
+      list.appendChild(li);
+    }
+    msg.textContent = data.me && !data.top.some(r => r.me) ? T.yourRank(data.me.rank, data.me.best) : '';
+  }
+  function openBoard() {
+    document.getElementById('lbview').classList.remove('hidden');
+    const msg = document.getElementById('lbmsg');
+    document.getElementById('lblist').innerHTML = '';
+    if (!API || !initData) { msg.textContent = T.openInTg; return; }
+    if (lastBoard) renderBoard(lastBoard); else msg.textContent = T.loading;
+    api('/top').then(d => { lastBoard = d; renderBoard(d); }).catch(() => { if (!lastBoard) msg.textContent = T.lbError; });
+  }
+  function submitScore(s, duration) {
+    if (!API || !initData || s <= 0) return;
+    api('/score', { method: 'POST', body: JSON.stringify({ score: s, duration }) })
+      .then(d => { lastBoard = d; if (d.me) document.getElementById('rank').textContent += ` · #${d.me.rank}`; })
+      .catch(() => {});
+  }
+  document.querySelectorAll('.lbopen').forEach(b => b.onclick = openBoard);
+  document.getElementById('lbclose').onclick = () => document.getElementById('lbview').classList.add('hidden');
 
   function share() {
     const url = "https://t.me/zdibanka_deploy_bot/deploy";
