@@ -518,7 +518,7 @@ const SHARE_URL = 'https://t.me/zdibanka_deploy_bot/bots';
 
     // wave cleared -> short pause, then the upgrade choice
     if (!foes().length) {
-      if (clearT === 0) { clearT = 0.001; const bonus = 50 * wave; score += bonus; popup(W / 2, H * 0.5, `${T.waveClear} +${bonus}`, '#4ade80', 20, 1.2); ebullets = []; hud(); }
+      if (clearT === 0) { clearT = 0.001; const bonus = 50 * wave; score += bonus; popup(W / 2, H * 0.5, `${T.waveClear} +${bonus}`, '#4ade80', 20, 1.2); ebullets = []; hud(); submitScore(score, t, false); }
       clearT += dt;
       if (clearT > 1.1 && !drops.length || clearT > 3.4) { if (xp >= D.xpNeed(lvl)) offerUpgrade(); else startWave(); }
     }
@@ -634,7 +634,7 @@ const SHARE_URL = 'https://t.me/zdibanka_deploy_bot/bots';
     audioInit(); if (actx && actx.state === 'suspended') actx.resume();
     $('start').classList.add('hidden'); $('over').classList.add('hidden'); $('upgrade').classList.add('hidden');
     $('bomb').style.display = 'flex'; $('mute').style.display = 'flex'; $('xp').style.display = 'flex';
-    reset(); mode = 'play'; lastTs = 0; startWave(); haptic('tap');
+    reset(); sentScore = 0; mode = 'play'; lastTs = 0; startWave(); haptic('tap');
   }
   function gameOver() {
     mode = 'over'; haptic('over'); sfx('boom');
@@ -644,7 +644,7 @@ const SHARE_URL = 'https://t.me/zdibanka_deploy_bot/bots';
     $('rank').textContent = `${T.ranks[Math.min(T.ranks.length - 1, Math.floor((wave - 1) / 3))]} · ${T.reached(wave)}`;
     $('bestline').textContent = isBest && score > 0 ? T.newBest : `${T.best}: ${best}`;
     setTimeout(() => $('over').classList.remove('hidden'), 700);
-    submitScore(score, t);
+    submitScore(score, t, true);
   }
 
   // ---------- leaderboard ----------
@@ -670,11 +670,17 @@ const SHARE_URL = 'https://t.me/zdibanka_deploy_bot/bots';
     if (lastBoard) renderBoard(lastBoard); else msg.textContent = T.loading;
     api(`/top?game=${GAME}`).then(d => { lastBoard = d; renderBoard(d); }).catch(() => { if (!lastBoard) msg.textContent = T.lbError; });
   }
-  function submitScore(s, duration) {
-    if (!API || !initData || s <= 0) return;
-    api('/score', { method: 'POST', body: JSON.stringify({ score: s, duration, game: GAME }) })
-      .then(d => { lastBoard = d; if (d.me) $('rank').textContent += ` · #${d.me.rank}`; }).catch(() => {});
+  // Sent after every cleared wave, on game over, and when the app is hidden or closed, so a run counts even if nobody finishes it.
+  let sentScore = 0;
+  function submitScore(s, duration, final, keepalive = false) {
+    if (!API || !initData || s <= 0 || (!final && s <= sentScore)) return;
+    sentScore = Math.max(sentScore, s);
+    api('/score', { method: 'POST', keepalive, body: JSON.stringify({ score: s, duration, game: GAME, final }) })
+      .then(d => { lastBoard = d; if (final && d.me) $('rank').textContent += ` · #${d.me.rank}`; }).catch(() => { if (!final) sentScore = 0; });
   }
+  const flush = () => { if (mode === 'play' || mode === 'upgrade') submitScore(score, t, false, true); };
+  document.addEventListener('visibilitychange', () => { if (document.hidden) flush(); });
+  window.addEventListener('pagehide', flush);
   document.querySelectorAll('.lbopen').forEach(b => b.onclick = openBoard);
   $('lbclose').onclick = () => $('lbview').classList.add('hidden');
   function share() {

@@ -93,12 +93,12 @@ export default {
 
       const name = [user.first_name, user.last_name].filter(Boolean).join(' ').slice(0, 64) || 'Anonymous';
       await env.DB.prepare(
-        `INSERT INTO ${game.table} (user_id, name, username, best, games, updated_at) VALUES (?1, ?2, ?3, ?4, 1, ?5)
+        `INSERT INTO ${game.table} (user_id, name, username, best, games, updated_at) VALUES (?1, ?2, ?3, ?4, ?6, ?5)
          ON CONFLICT(user_id) DO UPDATE SET
-           name = excluded.name, username = excluded.username, games = games + 1,
+           name = excluded.name, username = excluded.username, games = games + ?6,
            updated_at = CASE WHEN excluded.best > best THEN excluded.updated_at ELSE updated_at END,
            best = MAX(best, excluded.best)`
-      ).bind(user.id, name, user.username || null, score, Date.now()).run();
+      ).bind(user.id, name, user.username || null, score, Date.now(), body.final === false ? 0 : 1).run();
       return json(env, await board(env, user.id, game.table));
     }
 
