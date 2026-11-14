@@ -16,6 +16,10 @@
   #hud .mid { letter-spacing: 1px; font-size: 13px; }
   #combo { color: var(--gold); margin-left: 8px; font-size: 13px; }
   #wave { color: var(--accent); font-size: 13px; }
+  #xp { position: fixed; top: 34px; left: 14px; right: 14px; display: none; align-items: center; gap: 8px; pointer-events: none; font-size: 11px; font-weight: 800; color: var(--hint); }
+  #xpbar { flex: 1; height: 5px; border-radius: 3px; background: rgba(255,255,255,.12); overflow: hidden; }
+  #xpfill { height: 100%; width: 0; background: linear-gradient(90deg, #5aa8ff, #ffd84a); transition: width .2s; }
+  #xp.full #xptxt { color: var(--gold); }
   #banner { position: fixed; top: 34%; left: 0; right: 0; text-align: center; font-weight: 900; font-size: 26px; letter-spacing: 2px;
     color: #fff; text-shadow: 0 0 18px var(--accent), 0 0 4px #000; opacity: 0; transition: opacity .25s; pointer-events: none; padding: 0 12px; }
   #banner small { display: block; font-size: 14px; letter-spacing: 1px; color: var(--hint); margin-top: 6px; font-weight: 700; }
@@ -57,6 +61,7 @@
 <body>
 <canvas id="game"></canvas>
 <div id="hud"><span><span id="score">0</span><span id="combo"></span></span><span class="mid" id="lives"></span><span id="wave"></span></div>
+<div id="xp"><div id="xpbar"><div id="xpfill"></div></div><span id="xptxt"></span></div>
 <div id="banner"></div>
 <button id="bomb">💣<span id="bombn">1</span></button>
 <button id="mute">🔊</button>
@@ -125,30 +130,30 @@ const SHARE_URL = 'https://t.me/zdibanka_deploy_bot/bots';
   const STR = {
     uk: { title: 'Рома проти ботів', tagline: 'Чат захопили боти. Модератор Рома вилітає на чергування.',
       lgEnemies: 'спам-боти, скамери, фішинг-дрони, тролі', lgMove: 'тягни Рому — він стріляє сам', lgDrops: 'бонуси: турбо, щит, життя, бали',
-      lgBomb: 'бан-хвиля — кнопка справа внизу', lgUp: 'після кожної хвилі обирай апгрейд', lgBoss: 'кожна 5-та хвиля — ботоферма',
+      lgBomb: 'бан-хвиля — кнопка справа внизу', lgUp: 'збирай чипи 🔩 з ботів — за них дають апгрейди', lgBoss: 'кожна 5-та хвиля — ботоферма',
       play: 'На чергування', over: 'Чат захоплено', again: 'Ще раз', share: 'Поділитись', best: 'Рекорд', newBest: '🏆 Новий особистий рекорд!',
       wave: 'Хвиля', waveClear: 'Хвилю зачищено', boss: '⚠️ БОТОФЕРМА', bossSub: 'збий її, поки не заспамила чат', bossDown: 'БОТОФЕРМУ ЗНИЩЕНО',
-      breach: 'БОТИ ПРОРВАЛИСЬ!', upTitle: 'Обери апгрейд', upSub: n => `Хвилю ${n} зачищено. Що беремо?`, lvl: 'рів.',
+      breach: 'БОТИ ПРОРВАЛИСЬ!', upTitle: 'Обери апгрейд', upSub: n => `Чипів вистачило на апгрейд. Що беремо?`, lvl: 'рів.',
       streak: ['БАН!', 'ПЕРМАБАН!', 'ЧИСТИЙ ЧАТ!', 'ГРОЗА БОТІВ!', 'ЛЕГЕНДА АНТИСПАМУ!'], turbo: 'ТУРБО!', shield: 'ЩИТ!', banwave: 'БАН-ХВИЛЯ!',
       ranks: ['Новачок у чаті', 'Модератор-стажер', 'Модератор', 'Адмін чату', 'Мисливець на ботів', 'Гроза ботоферм', 'Легенда антиспаму'],
       reached: n => `Дійшов до хвилі ${n}`, shareText: (s, n) => `Я забанив ботів на ${s} балів (хвиля ${n}) у «Рома проти ботів» 🚀 Перевершиш?`,
       leaderboard: 'Таблиця лідерів', close: 'Закрити', loading: 'Завантаження…', empty: 'Ще немає результатів — будь першим!',
       openInTg: 'Відкрий гру в Telegram, щоб побачити таблицю лідерів.', lbError: 'Таблиця лідерів зараз недоступна.', yourRank: (r, b) => `Твоє місце: #${r} (${b})`,
-      up: { rate: ['Швидкий вогонь', '+25% скорострільності'], guns: ['Ще одна гармата', 'більше куль за постріл'], dmg: ['Важкі кулі', '+1 до урону'],
+      up: { score: ['Премія', 'просто бали'], rate: ['Швидкий вогонь', '+20% скорострільності'], guns: ['Ще одна гармата', 'більше куль за постріл'], dmg: ['Важкі кулі', '+1 до урону'],
         pierce: ['Пробивні кулі', 'куля прошиває двох ботів'], rocket: ['Самонавідні ракети', 'самі шукають ціль'], drone: ['Дрон-модератор', 'напарник, що стріляє поруч'],
         shield: ['Автощит', 'новий щит на кожній хвилі'], bomb: ['Бан-хвиля', '+1 заряд'], life: ['Запасне життя', '+1 життя'], magnet: ['Магніт', 'бонуси летять до тебе'] } },
     en: { title: 'Roma vs Bots', tagline: 'Bots took over the chat. Moderator Roma is on duty.',
       lgEnemies: 'spam bots, scammers, phishing drones, trolls', lgMove: 'drag Roma — he fires on his own', lgDrops: 'drops: turbo, shield, life, points',
-      lgBomb: 'ban wave — button at bottom right', lgUp: 'pick an upgrade after every wave', lgBoss: 'every 5th wave is a bot farm',
+      lgBomb: 'ban wave — button at bottom right', lgUp: 'collect chips 🔩 from bots to earn upgrades', lgBoss: 'every 5th wave is a bot farm',
       play: 'Go on duty', over: 'Chat overrun', again: 'Again', share: 'Share', best: 'Best', newBest: '🏆 New personal best!',
       wave: 'Wave', waveClear: 'Wave cleared', boss: '⚠️ BOT FARM', bossSub: 'take it down before it spams the chat', bossDown: 'BOT FARM DESTROYED',
-      breach: 'BOTS BROKE THROUGH!', upTitle: 'Pick an upgrade', upSub: n => `Wave ${n} cleared. What do we take?`, lvl: 'lvl',
+      breach: 'BOTS BROKE THROUGH!', upTitle: 'Pick an upgrade', upSub: n => `Enough chips for an upgrade. What do we take?`, lvl: 'lvl',
       streak: ['BAN!', 'PERMABAN!', 'CLEAN CHAT!', 'BOT SLAYER!', 'ANTISPAM LEGEND!'], turbo: 'TURBO!', shield: 'SHIELD!', banwave: 'BAN WAVE!',
       ranks: ['Chat newbie', 'Trainee mod', 'Moderator', 'Chat admin', 'Bot hunter', 'Bot farm slayer', 'Antispam legend'],
       reached: n => `Reached wave ${n}`, shareText: (s, n) => `I banned bots for ${s} points (wave ${n}) in Roma vs Bots 🚀 Can you beat me?`,
       leaderboard: 'Leaderboard', close: 'Close', loading: 'Loading…', empty: 'No scores yet — be the first!',
       openInTg: 'Open the game from Telegram to see the leaderboard.', lbError: 'Leaderboard is unavailable right now.', yourRank: (r, b) => `Your place: #${r} (${b})`,
-      up: { rate: ['Rapid fire', '+25% fire rate'], guns: ['Extra gun', 'more bullets per shot'], dmg: ['Heavy rounds', '+1 damage'],
+      up: { score: ['Bonus', 'just points'], rate: ['Rapid fire', '+20% fire rate'], guns: ['Extra gun', 'more bullets per shot'], dmg: ['Heavy rounds', '+1 damage'],
         pierce: ['Piercing rounds', 'a bullet goes through two bots'], rocket: ['Homing rockets', 'they find targets themselves'], drone: ['Mod drone', 'a wingman firing beside you'],
         shield: ['Auto shield', 'a fresh shield every wave'], bomb: ['Ban wave', '+1 charge'], life: ['Spare life', '+1 life'], magnet: ['Magnet', 'drops fly to you'] } },
   };
@@ -234,17 +239,37 @@ const SHARE_URL = 'https://t.me/zdibanka_deploy_bot/bots';
     { k: 'drone', e: '🛰️', max: 2 }, { k: 'shield', e: '🛡️', max: 1 }, { k: 'bomb', e: '💣', max: 99 }, { k: 'life', e: '❤️', max: 99 }, { k: 'magnet', e: '🧲', max: 1 },
   ];
   const DROPS = [['power', '⚡', 30], ['shield', '🛡️', 22], ['gem', '💎', 30], ['bomb', '💣', 12], ['life', '❤️', 6]];
-  const MAX_LIVES = 5, MAX_BOMBS = 5, DROP_CHANCE = 0.085;
+  const MAX_LIVES = 4, MAX_BOMBS = 4;
+  // Difficulty model: every number that shapes the difficulty curve lives here, as a function of the wave (w) or boss tier.
+  const D = {
+    formSpeed: w => 30 + 5 * w,                              // px/s the formation marches at (x up to ~2.9 as it thins out)
+    stepDown: w => 14 + Math.min(10, w),                     // px the formation drops at each edge
+    fireEvery: w => Math.max(0.2, 1.05 - 0.075 * w),         // mean seconds between enemy shots
+    volley: w => w >= 11 ? 0.55 : w >= 6 ? 0.3 : w >= 3 ? 0.12 : 0, // chance that a second bot fires at the same moment
+    aimed: w => Math.min(0.6, Math.max(0, (w - 4) * 0.08)),  // chance that a plain spam bot aims instead of firing straight down
+    bulletSpeed: w => Math.min(390, 155 + 11 * w),
+    diveEvery: w => Math.max(0.8, 3.4 - 0.26 * w),           // seconds between dive attacks (from wave 2)
+    divers: w => w >= 9 ? 2 : 1,                             // bots that dive together
+    hpBonus: w => Math.floor((w - 1) / 4) + Math.max(0, Math.floor((w - 10) / 3)), // extra hit points per bot: +1 from wave 5, +2 from 9, then faster
+    promote: w => Math.min(0.5, Math.max(0, (w - 5) * 0.07)),// chance a bot is swapped for a tougher type
+    bossHp: tier => 120 + 130 * (tier - 1),
+    bossEvery: tier => Math.max(0.85, 1.65 - 0.13 * tier),   // seconds between boss attacks (x0.7 when enraged below half health)
+    dropChance: 0.05,                                        // chance of a power-up from an ordinary kill
+    xpNeed: lvl => 12 + 12 * lvl,                            // chips needed for the next upgrade: 12, 24, 36, 48...
+    fireRate: 3.0, rateStep: 0.2, invuln: 1.6,
+  };
+  // Upgrade chips: [chance to drop, how many] per bot type. Tougher bots are worth more.
+  const CHIP = { spam: [0.35, 1], scam: [0.6, 1], phish: [0.6, 1], troll: [1, 2], virus: [0.25, 1], courier: [1, 2], boss: [1, 12] };
 
   // ---------- state ----------
   let mode = 'menu', player, up, bullets, ebullets, enemies, drops, parts, popups, rings, stars, form;
-  let score, lives, bombs, wave, combo, comboT, best = 0, t, shake, lastTs, fireT, rocketT, droneT, efireT, diveT, courierT, overT, waveTotal, bossAlive, clearT, uid;
+  let score, lives, bombs, wave, combo, comboT, best = 0, t, shake, lastTs, fireT, rocketT, droneT, efireT, diveT, courierT, overT, waveTotal, bossAlive, clearT, uid, xp, lvl;
 
   function reset() {
     player = { x: W / 2, y: H - 96, tx: W / 2, inv: 0, shield: 0 };
     up = { rate: 0, guns: 0, dmg: 0, pierce: 0, rocket: 0, drone: 0, shield: 0, bomb: 0, life: 0, magnet: 0 };
     bullets = []; ebullets = []; enemies = []; drops = []; parts = []; popups = []; rings = [];
-    score = 0; lives = 3; bombs = 1; wave = 0; combo = 0; comboT = 0; t = 0; shake = 0; fireT = 0; rocketT = 1; droneT = 0.3; overT = 0; courierT = 9; clearT = 0; uid = 0;
+    score = 0; lives = 3; bombs = 1; wave = 0; combo = 0; comboT = 0; t = 0; shake = 0; fireT = 0; rocketT = 1; droneT = 0.3; overT = 0; courierT = 11; clearT = 0; uid = 0; xp = 0; lvl = 0;
     hud();
   }
   function initStars() { stars = Array.from({ length: 90 }, () => ({ x: Math.random() * W, y: Math.random() * H, z: 0.3 + Math.random() * 0.9 })); }
@@ -254,6 +279,8 @@ const SHARE_URL = 'https://t.me/zdibanka_deploy_bot/bots';
     $('combo').textContent = mult() > 1 ? `x${mult()}` : '';
     $('lives').textContent = '❤️'.repeat(Math.max(lives, 0)) + '🖤'.repeat(Math.max(3 - lives, 0));
     $('wave').textContent = wave ? `${T.wave} ${wave}` : '';
+    const need = D.xpNeed(lvl); $('xpfill').style.width = Math.min(100, xp / need * 100) + '%'; $('xptxt').textContent = `🔩 ${Math.min(xp, need)}/${need}`;
+    $('xp').classList.toggle('full', xp >= need);
     $('bombn').textContent = bombs; $('bomb').classList.toggle('empty', bombs <= 0);
   }
   function banner(text, sub, ms = 1600) {
@@ -272,12 +299,17 @@ const SHARE_URL = 'https://t.me/zdibanka_deploy_bot/bots';
     wave++; bullets = []; ebullets = []; clearT = 0;
     if (up.shield) player.shield = 1;
     const boss = wave % 5 === 0, tier = Math.floor(wave / 5);
-    form = { x: 0, y: 0, dir: 1, base: 24 + wave * 3.5 };
+    form = { x: 0, y: 0, dir: 1, base: D.formSpeed(wave) };
     bossAlive = false;
     if (boss) {
-      const hp = 110 + 90 * (tier - 1);
+      const hp = D.bossHp(tier);
       enemies.push({ id: ++uid, type: 'boss', x: W / 2, y: -90, hp, maxhp: hp, t: 0, atk: 0, atkT: 2.2, flash: 0, tier });
       bossAlive = true; banner(T.boss, T.bossSub, 2200); sfx('alarm'); haptic('hit');
+      if (tier >= 2) {                                       // later bot farms arrive with an escort
+        const cols = Math.max(5, Math.min(9, Math.floor((W - 36) / 46) - 1)); form.x = (W - (cols - 1) * 46) / 2;
+        for (let r = 0; r < Math.min(3, tier - 1); r++) for (let c = 0; c < cols; c++) { const ty = r === 0 ? 'scam' : 'spam', hp2 = ET[ty].hp + D.hpBonus(wave);
+          enemies.push({ id: ++uid, type: ty, fx: c * 46, fy: 190 + r * 40, x: form.x + c * 46, y: -40 - r * 40, hp: hp2, maxhp: hp2, state: 'form', t: Math.random() * 6, flash: 0 }); }
+      }
     } else {
       const cols = Math.max(5, Math.min(9, Math.floor((W - 36) / 46) - 1)), rows = Math.min(3 + Math.floor((wave - 1) / 2), 6);
       const gw = (cols - 1) * 46; form.x = (W - gw) / 2;
@@ -286,15 +318,15 @@ const SHARE_URL = 'https://t.me/zdibanka_deploy_bot/bots';
         // tougher bots sit in the back rows; the mix gets nastier every wave
         if (wave >= 4 && r === 0) type = 'troll'; else if (wave >= 2 && r <= (wave >= 6 ? 1 : 0)) type = 'scam'; else if (wave >= 3 && r === rows - 1) type = 'phish';
         for (let c = 0; c < cols; c++) {
-          let ty = type; if (wave >= 7 && Math.random() < Math.min(0.35, (wave - 6) * 0.05)) ty = ['scam', 'phish', 'troll'][Math.floor(Math.random() * 3)];
-          const d = ET[ty], hp = d.hp + Math.floor(wave / 8);
+          let ty = type; if (Math.random() < D.promote(wave)) ty = ['scam', 'phish', 'troll'][Math.floor(Math.random() * 3)];
+          const d = ET[ty], hp = d.hp + D.hpBonus(wave);
           enemies.push({ id: ++uid, type: ty, fx: c * 46, fy: 74 + r * 40, x: form.x + c * 46, y: -40 - r * 40 - Math.random() * 60, hp, maxhp: hp, state: 'form', t: Math.random() * 6, flash: 0 });
         }
       }
       banner(`${T.wave} ${wave}`, null, 1300);
     }
     waveTotal = enemies.filter(e => e.type !== 'courier').length;
-    efireT = 1.6; diveT = 3.5;
+    efireT = 1.3; diveT = 3;
     hud();
   }
   const foes = () => enemies.filter(e => e.type !== 'courier');
@@ -321,7 +353,7 @@ const SHARE_URL = 'https://t.me/zdibanka_deploy_bot/bots';
   function hurt() {
     if (player.inv > 0) return;
     if (player.shield) { player.shield = 0; player.inv = 1; burst(player.x, player.y, '#67e8f9', 26, 260); sfx('hit'); haptic('hit'); return; }
-    lives--; player.inv = 2.2; shake = 0.45; combo = 0; ebullets = []; burst(player.x, player.y, '#f87171', 40, 320, .8); sfx('hurt'); haptic('hit'); hud();
+    lives--; player.inv = D.invuln; shake = 0.45; combo = 0; ebullets = []; burst(player.x, player.y, '#f87171', 40, 320, .8); sfx('hurt'); haptic('hit'); hud();
     if (lives <= 0) gameOver();
   }
 
@@ -340,13 +372,15 @@ const SHARE_URL = 'https://t.me/zdibanka_deploy_bot/bots';
       bossAlive = false; shake = 0.8; sfx('boom'); haptic('good');
       for (let k = 0; k < 6; k++) burst(e.x + (Math.random() - .5) * 90, e.y + (Math.random() - .5) * 70, k % 2 ? '#ffd84a' : '#f87171', 30, 380, 1);
       rings.push({ x: e.x, y: e.y, r: 10, life: .8 }); ebullets = [];
-      for (let k = 0; k < 3; k++) spawnDrop(e.x + (k - 1) * 46, e.y, k === 1 ? 'life' : null);
+      for (let k = 0; k < 2; k++) spawnDrop(e.x + (k ? 40 : -40), e.y, k ? 'life' : null);
       for (const o of enemies.slice()) if (o.type === 'virus') kill(o);
       banner(T.bossDown, null, 1500);
     } else {
       burst(e.x, e.y, d.col, 14, 220); sfx('kill'); haptic('kill');
-      if (e.type === 'courier' || Math.random() < DROP_CHANCE) spawnDrop(e.x, e.y);
+      if (e.type === 'courier' || Math.random() < D.dropChance) spawnDrop(e.x, e.y);
     }
+    const [pc, pn] = CHIP[e.type];
+    if (Math.random() < pc) for (let k = 0; k < pn; k++) drops.push({ kind: 'chip', e: '🔩', x: e.x + (Math.random() - .5) * (pn > 2 ? 150 : 24), y: e.y + (Math.random() - .5) * 20, vy: 100 + Math.random() * 25, t: Math.random() * 6 });
     hud();
   }
   function spawnDrop(x, y, kind) {
@@ -355,6 +389,7 @@ const SHARE_URL = 'https://t.me/zdibanka_deploy_bot/bots';
     drops.push({ kind, e: DROPS.find(d => d[0] === kind)[1], x, y, vy: 120, t: 0 });
   }
   function collect(d) {
+    if (d.kind === 'chip') { xp++; burst(d.x, d.y, '#5aa8ff', 6, 120, .3); if (actx && !muted) tone(1200, 1800, 0.05, 0.03); if (xp === D.xpNeed(lvl)) { popup(player.x, player.y - 44, '🔩 MAX', '#ffd84a', 16); haptic('good'); } hud(); return; }
     sfx('drop'); haptic('good'); burst(d.x, d.y, '#ffd84a', 16, 200);
     if (d.kind === 'power') { overT = 8; popup(player.x, player.y - 40, T.turbo, '#ffd84a', 18); }
     else if (d.kind === 'shield') { player.shield = 1; popup(player.x, player.y - 40, T.shield, '#67e8f9', 18); }
@@ -368,8 +403,8 @@ const SHARE_URL = 'https://t.me/zdibanka_deploy_bot/bots';
   function ebullet(x, y, vx, vy, col = '#fb7185', r = 5) { if (ebullets.length < 140) ebullets.push({ x, y, vx, vy, r, col }); }
   function aimed(x, y, speed, spread = 0) { const a = Math.atan2(player.y - y, player.x - x) + spread; ebullet(x, y, Math.cos(a) * speed, Math.sin(a) * speed); }
   function enemyFire(e) {
-    const sp = Math.min(320, 135 + wave * 7);
-    if (e.type === 'scam') aimed(e.x, e.y + 12, sp);
+    const sp = D.bulletSpeed(wave);
+    if (e.type === 'scam' || (e.type === 'spam' && Math.random() < D.aimed(wave))) aimed(e.x, e.y + 12, sp);
     else if (e.type === 'troll') { for (const s of [-0.28, 0, 0.28]) aimed(e.x, e.y + 12, sp * 0.9, s); }
     else ebullet(e.x, e.y + 12, 0, sp);
   }
@@ -377,12 +412,12 @@ const SHARE_URL = 'https://t.me/zdibanka_deploy_bot/bots';
     b.t += dt; b.y += (118 - b.y) * Math.min(1, dt * 2.2); b.x = W / 2 + Math.sin(b.t * 0.75) * Math.max(20, W / 2 - 74);
     if (b.y < 100) return;
     b.atkT -= dt; if (b.atkT > 0) return;
-    const sp = 170 + b.tier * 22, rage = b.hp < b.maxhp * 0.4;
+    const sp = 175 + b.tier * 24, rage = b.hp < b.maxhp * 0.5;
     const kind = b.atk % 3; b.atk++;
     if (kind === 0) { for (let k = 0; k < 3; k++) setTimeout(() => { if (mode === 'play' && enemies.includes(b)) for (const s of [-0.22, 0, 0.22]) aimed(b.x, b.y + 30, sp * 1.15, s); }, k * 220); }
     else if (kind === 1) { const n = 10 + b.tier * 2, off = Math.random() * 6.283; for (let k = 0; k < n; k++) { const a = off + k / n * 6.283; if (Math.sin(a) > -0.35) ebullet(b.x, b.y + 10, Math.cos(a) * sp, Math.sin(a) * sp, '#fbbf24'); } }
-    else { for (let k = 0; k < 3 + b.tier; k++) enemies.push({ id: ++uid, type: 'virus', x: b.x + (k - (2 + b.tier) / 2) * 34, y: b.y + 30, hp: 1, maxhp: 1, state: 'fall', t: Math.random() * 6, flash: 0, vy: 95 + b.tier * 12 }); }
-    b.atkT = (rage ? 1.25 : 1.9) - Math.min(0.5, b.tier * 0.1);
+    else { const nv = 2 + b.tier; for (let k = 0; k < nv; k++) enemies.push({ id: ++uid, type: 'virus', x: Math.max(20, Math.min(W - 20, b.x + (k - (nv - 1) / 2) * 56)), y: b.y + 30, hp: 1, maxhp: 1, state: 'fall', t: Math.random() * 6, flash: 0, vy: 95 + b.tier * 12 }); }
+    b.atkT = D.bossEvery(b.tier) * (rage ? 0.7 : 1);
   }
 
   // ---------- step ----------
@@ -393,7 +428,7 @@ const SHARE_URL = 'https://t.me/zdibanka_deploy_bot/bots';
     if (comboT > 0) { comboT -= dt; if (comboT <= 0) { combo = 0; hud(); } }
 
     // weapons
-    fireT -= dt; if (fireT <= 0) { fireT += 1 / (3.3 * (1 + 0.25 * up.rate) * (overT > 0 ? 1.8 : 1)); shoot(); }
+    fireT -= dt; if (fireT <= 0) { fireT += 1 / (D.fireRate * (1 + D.rateStep * up.rate) * (overT > 0 ? 1.8 : 1)); shoot(); }
     if (up.rocket) { rocketT -= dt; if (rocketT <= 0) { rocketT = 1.5 / up.rocket; fireRocket(); } }
     if (up.drone) { droneT -= dt; if (droneT <= 0) { droneT = 0.55; for (let k = 0; k < up.drone; k++) bullets.push({ x: player.x + (k ? 44 : -44), y: player.y - 6, vx: 0, vy: -560, dmg: 1 + up.dmg, pierce: 0, hit: null, small: true }); } }
 
@@ -403,20 +438,21 @@ const SHARE_URL = 'https://t.me/zdibanka_deploy_bot/bots';
       const speed = form.base * (1 + (1 - alive / Math.max(1, waveTotal)) * 1.9);
       form.x += form.dir * speed * dt;
       let lo = Infinity, hi = -Infinity; for (const e of formed) { lo = Math.min(lo, e.fx); hi = Math.max(hi, e.fx); }
-      if (form.dir > 0 && form.x + hi > W - 24) { form.dir = -1; form.y += 13; } else if (form.dir < 0 && form.x + lo < 24) { form.dir = 1; form.y += 13; }
+      if (form.dir > 0 && form.x + hi > W - 24) { form.dir = -1; form.y += D.stepDown(wave); } else if (form.dir < 0 && form.x + lo < 24) { form.dir = 1; form.y += D.stepDown(wave); }
     }
     // fire & dives
     efireT -= dt;
-    if (efireT <= 0 && formed.length) { enemyFire(formed[Math.floor(Math.random() * formed.length)]); efireT = Math.max(0.32, 1.55 - wave * 0.075) * (0.6 + Math.random() * 0.8); }
+    if (efireT <= 0 && formed.length) { enemyFire(formed[Math.floor(Math.random() * formed.length)]); if (Math.random() < D.volley(wave)) enemyFire(formed[Math.floor(Math.random() * formed.length)]);
+      efireT = D.fireEvery(wave) * (0.6 + Math.random() * 0.8); }
     diveT -= dt;
     if (diveT <= 0 && wave >= 2 && formed.length) {
-      const cand = formed.filter(e => e.type === 'phish'); const pool = cand.length ? cand : (wave >= 5 ? formed : []);
-      if (pool.length) { const e = pool[Math.floor(Math.random() * pool.length)]; e.state = 'prep'; e.dt = 0; }
-      diveT = Math.max(1.1, 4.2 - wave * 0.25) * (0.7 + Math.random() * 0.6);
+      const cand = formed.filter(e => e.type === 'phish' && e.state === 'form'); const pool = cand.length ? cand : (wave >= 4 ? formed.filter(e => e.state === 'form') : []);
+      for (let k = 0; k < D.divers(wave) && pool.length; k++) { const e = pool.splice(Math.floor(Math.random() * pool.length), 1)[0]; e.state = 'prep'; e.dt = 0; }
+      diveT = D.diveEvery(wave) * (0.7 + Math.random() * 0.6);
     }
     // courier with a guaranteed drop
     courierT -= dt;
-    if (courierT <= 0 && !enemies.some(e => e.type === 'courier')) { const left = Math.random() < .5; enemies.push({ id: ++uid, type: 'courier', x: left ? -30 : W + 30, y: 56, vx: left ? 95 : -95, hp: 1, maxhp: 1, state: 'fly', t: 0, flash: 0 }); courierT = 13 + Math.random() * 8; }
+    if (courierT <= 0 && !enemies.some(e => e.type === 'courier')) { const left = Math.random() < .5; enemies.push({ id: ++uid, type: 'courier', x: left ? -30 : W + 30, y: 56, vx: left ? 95 : -95, hp: 1, maxhp: 1, state: 'fly', t: 0, flash: 0 }); courierT = 16 + Math.random() * 9; }
 
     let breach = false;
     for (const e of enemies.slice()) {
@@ -484,7 +520,7 @@ const SHARE_URL = 'https://t.me/zdibanka_deploy_bot/bots';
     if (!foes().length) {
       if (clearT === 0) { clearT = 0.001; const bonus = 50 * wave; score += bonus; popup(W / 2, H * 0.5, `${T.waveClear} +${bonus}`, '#4ade80', 20, 1.2); ebullets = []; hud(); }
       clearT += dt;
-      if (clearT > 1.1 && !drops.length || clearT > 3.2) offerUpgrade();
+      if (clearT > 1.1 && !drops.length || clearT > 3.4) { if (xp >= D.xpNeed(lvl)) offerUpgrade(); else startWave(); }
     }
 
     for (let i = parts.length - 1; i >= 0; i--) { const p = parts[i]; p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt; if (p.life <= 0) parts.splice(i, 1); }
@@ -495,22 +531,24 @@ const SHARE_URL = 'https://t.me/zdibanka_deploy_bot/bots';
 
   // ---------- upgrades ----------
   function offerUpgrade() {
-    mode = 'upgrade';
+    mode = 'upgrade'; xp -= D.xpNeed(lvl); lvl++;
     const pool = UPS.filter(u => up[u.k] < u.max && !(u.k === 'life' && lives >= MAX_LIVES) && !(u.k === 'bomb' && bombs >= MAX_BOMBS)).sort(() => Math.random() - .5).slice(0, 3);
+    if (pool.length < 3) pool.push({ k: 'score', e: '💎', max: 99 });   // always something to pick, even with everything maxed out
     const box = $('ups'); box.innerHTML = '';
     $('upSub').textContent = T.upSub(wave);
     for (const u of pool) {
       const b = document.createElement('button'); b.className = 'up';
       const ico = document.createElement('div'); ico.className = 'ico'; ico.textContent = u.e;
       const txt = document.createElement('div'); const nm = document.createElement('b'); nm.textContent = T.up[u.k][0]; const ds = document.createElement('span'); ds.textContent = T.up[u.k][1]; txt.append(nm, ds);
-      const lv = document.createElement('i'); lv.textContent = u.max < 99 ? `${T.lvl} ${up[u.k] + 1}/${u.max}` : '';
+      const lv = document.createElement('i'); lv.textContent = u.max < 99 ? `${T.lvl} ${up[u.k] + 1}/${u.max}` : u.k === 'score' ? `+${400 * wave}` : '';
       b.append(ico, txt, lv); b.onclick = () => pickUpgrade(u.k); box.append(b);
     }
     $('upgrade').classList.remove('hidden');
   }
   function pickUpgrade(k) {
     if (mode !== 'upgrade') return;
-    up[k]++; if (k === 'bomb') bombs = Math.min(MAX_BOMBS, bombs + 1); if (k === 'life') lives = Math.min(MAX_LIVES, lives + 1); if (k === 'shield') player.shield = 1;
+    if (k === 'score') { score += 400 * wave; } else up[k]++;
+    if (k === 'bomb') bombs = Math.min(MAX_BOMBS, bombs + 1); if (k === 'life') lives = Math.min(MAX_LIVES, lives + 1); if (k === 'shield') player.shield = 1;
     $('upgrade').classList.add('hidden'); sfx('up'); haptic('good');
     mode = 'play'; lastTs = 0; startWave();
   }
@@ -525,7 +563,8 @@ const SHARE_URL = 'https://t.me/zdibanka_deploy_bot/bots';
     ctx.globalAlpha = 1;
     if (mode === 'menu') { ctx.restore(); return; }
 
-    for (const d of drops) { const bob = Math.sin(d.t * 6) * 3; ctx.globalAlpha = 0.25; ctx.fillStyle = '#ffd84a'; ctx.beginPath(); ctx.arc(d.x, d.y + bob, 17, 0, 6.283); ctx.fill(); ctx.globalAlpha = 1; emo(d.e, d.x, d.y + bob, 22); }
+    for (const d of drops) { const bob = Math.sin(d.t * 6) * 3; if (d.kind === 'chip') { ctx.globalAlpha = 0.3; ctx.fillStyle = '#5aa8ff'; ctx.beginPath(); ctx.arc(d.x, d.y + bob, 10, 0, 6.283); ctx.fill(); ctx.globalAlpha = 1; emo(d.e, d.x, d.y + bob, 14); continue; }
+      ctx.globalAlpha = 0.25; ctx.fillStyle = '#ffd84a'; ctx.beginPath(); ctx.arc(d.x, d.y + bob, 17, 0, 6.283); ctx.fill(); ctx.globalAlpha = 1; emo(d.e, d.x, d.y + bob, 22); }
 
     for (const e of enemies) {
       const d = ET[e.type];
@@ -594,7 +633,7 @@ const SHARE_URL = 'https://t.me/zdibanka_deploy_bot/bots';
   function start() {
     audioInit(); if (actx && actx.state === 'suspended') actx.resume();
     $('start').classList.add('hidden'); $('over').classList.add('hidden'); $('upgrade').classList.add('hidden');
-    $('bomb').style.display = 'flex'; $('mute').style.display = 'flex';
+    $('bomb').style.display = 'flex'; $('mute').style.display = 'flex'; $('xp').style.display = 'flex';
     reset(); mode = 'play'; lastTs = 0; startWave(); haptic('tap');
   }
   function gameOver() {
